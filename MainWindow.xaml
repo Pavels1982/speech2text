@@ -1,0 +1,79 @@
+﻿<Window x:Class="VoiceRecorder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VoiceRecorder"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="0.5*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+
+        <oxy:PlotView 
+            Margin="10"
+            Grid.Row="0"
+            Grid.Column="0"
+            Height="200"
+            Model="{Binding Model}"/>
+
+        <StackPanel
+            Margin="10"
+            Grid.Row="0"
+            Grid.Column="1"
+            Orientation="Vertical">
+
+            <Button 
+                Margin="10"
+                >
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Content" Value="Record"/>
+                        <Setter Property="Command" Value="{Binding StartRecordCommand}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsRecord}" Value="True">
+                                <Setter Property="Content" Value="Stop"/>
+                                <Setter Property="Command" Value="{Binding StopRecordCommand}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Slider 
+                Maximum="{Binding SliderMax}"
+                Value="{Binding SliderValue, Mode=TwoWay}"
+                />
+            <oxy:PlotView 
+            Margin="10"
+            Grid.Row="0"
+            Grid.Column="0"
+            Height="200"
+            Model="{Binding Model2}"/>
+
+
+        </StackPanel>
+
+        <StackPanel
+            Grid.Row="1" Orientation="Vertical">
+            <Image
+            RenderOptions.BitmapScalingMode="NearestNeighbor"
+            RenderOptions.EdgeMode="Unspecified"
+            Source="{Binding MfccBitmap}"/>
+            <Image
+            RenderOptions.BitmapScalingMode="NearestNeighbor"
+            RenderOptions.EdgeMode="Unspecified"
+            Source="{Binding WordBitmap}"/>
+        </StackPanel>
+
+
+
+    </Grid>
+</Window>
