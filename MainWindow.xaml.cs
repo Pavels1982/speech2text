@@ -49,6 +49,7 @@
         private WaveIn waveIn;
         private List<double> recordData = new List<double>();
         public PlotModel Model { get; set; }
+        public PlotModel MelChart2D { get; set; }
         private LineSeries Line = new LineSeries();
         private System.Windows.Media.GradientStopCollection gsc1 = new System.Windows.Media.GradientStopCollection(3);
 
@@ -126,46 +127,69 @@
             int height = mel[0].Length;
             List<double[]> buff = new List<double[]>();
             List<double[]> res = new List<double[]>();
-            bool first = false;
+           
+            int trash = 5;
             Coord lastCoord = new Coord();
-            foreach (var item in mel)
+            for (int i = 1; i < mel.Count(); i++)
             {
-                Coord nowCoord = new Coord();
-                for (int i = 0; i < height; i++)
-                {
-                    if (i < (height / 2))
-                        nowCoord.X += item[i];
-                    else
-                        nowCoord.Y += item[i];              
-                }
+                //Coord nowCoord = new Coord();
+                //double delta = 0;
+                bool err = false;
+                double power = 0;
 
-                double power = nowCoord.X + nowCoord.Y;
-                if (power > 10) 
+                for (int y = 0; y < height; y++)
                 {
 
-                        if (getDist(nowCoord, lastCoord) < 25 || !first)
-                        {
-                            first = true;
-                            res.Add(item);
-                            lastCoord = nowCoord;
-                        }
-                }
-                else
-                {
+                        //if (y < (height / 2))
+                        //    nowCoord.X += mel[i][y];
+                        //else
+                        //    nowCoord.Y += mel[i][y];
+                        power += Math.Abs(mel[i][y]);
 
-                    double[] red = new double[item.Length];
-                    for (int a = 0; a < red.Length; a++)
+                    if (mel[i][y] > mel[i - 1][y] + trash || mel[i][y] < mel[i - 1][y] - trash)
                     {
-                        red[a] = -50;
+                        err = true;
+                        double[] red = new double[mel[i].Length];
+                        for (int a = 0; a < height; a++)
+                        {
+                            red[a] = -50;
+                        }
+                        res.Add(red);
+                        break;
                     }
-                    res.Add(red);
-                    lastCoord = new Coord();
-                    first = false;
+
                 }
+
+                // double power = nowCoord.X + nowCoord.Y;
+                if (!err && power > 10)
+                    res.Add(mel[i]);
+
+                //if (power > 10) 
+                //{
+
+                //        if (getDist(nowCoord, lastCoord) < 25 || !first)
+                //        {
+                //            first = true;
+                //            res.Add(mel[i]);
+                //            lastCoord = nowCoord;
+                //        }
+                //}
+                //else
+                //{
+
+                //    double[] red = new double[mel[i].Length];
+                //    for (int a = 0; a < red.Length; a++)
+                //    {
+                //        red[a] = -50;
+                //    }
+                //    res.Add(red);
+                //    lastCoord = new Coord();
+                //    first = false;
+                //}
 
 
             }
-           return res;
+            return res;
         }
         private double getDist(Coord a, Coord b) => Math.Abs(Math.Sqrt(Math.Pow(a.X - b.X,2) + Math.Pow(a.Y - b.Y,2)));
 
@@ -265,6 +289,13 @@
             this.DataContext = this;
 
         }
+
+        private void InitMelChart2D()
+        {
+            MelChart2D = new PlotModel();
+        }
+
+
 
         private void initChar() { 
              Model = new PlotModel();

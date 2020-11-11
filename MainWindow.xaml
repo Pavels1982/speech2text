@@ -56,7 +56,7 @@
             Grid.Row="0"
             Grid.Column="0"
             Height="200"
-            Model="{Binding Model2}"/>
+            Model="{Binding MelChart2D}"/>
 
 
         </StackPanel>
