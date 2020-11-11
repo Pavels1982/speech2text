@@ -50,6 +50,10 @@
         private List<double> recordData = new List<double>();
         public PlotModel Model { get; set; }
         public PlotModel MelChart2D { get; set; }
+        public PlotModel MelChartVector { get; set; }
+
+        private LineSeries LineVector = new LineSeries();
+
         private LineSeries Line = new LineSeries();
         public RectangleBarSeries Bar { get; set; } = new RectangleBarSeries();
         private System.Windows.Media.GradientStopCollection gsc1 = new System.Windows.Media.GradientStopCollection(3);
@@ -66,6 +70,7 @@
         private int sliderValue = 0;
         public double coord_x { get; set; }
         public double coord_y { get; set; }
+        public double power { get; set; }
         public int SliderMax { get;set; } = 0;
         public int SliderValue
         {
@@ -80,18 +85,23 @@
                 MfccBitmap = GetImage(mel);
                  coord_x = 0;
                  coord_y = 0;
+                power = 0;
+                LineVector.Points.Clear();
 
-                coord_x += mel[value][0];
-
-                coord_y += mel[value][1];
-
-                for (int i = 2; i < mel[value].Length; i++)
+                for (int i = 0; i < mel[value].Length; i++)
                 {
+                    power += mel[value][i];
+                    LineVector.Points.Add(new DataPoint(i, mel[value][i]));
+
+                    if (i == 0) { coord_x += mel[value][0]; continue; }
+                    if (i == 1) { coord_y += mel[value][1]; continue; }
+
                     if (i < mel[value].Length / 2)
                         coord_x += mel[value][i];
                     else
-                        coord_y += mel[value][i];
+                        coord_y -= mel[value][i];
 
+                   
                 }
                 //for (int i = 0; i < mel[value].Length; i+=2)
                 //{
@@ -106,6 +116,9 @@
                 RectangleBarItem RectangleMel = new RectangleBarItem(coord_x - size, coord_y - size, coord_x + size, coord_y + size);
                 RectangleMel.Color = OxyColor.FromArgb(255, 0, 0, 255);
                 Bar.Items.Add(RectangleMel);
+
+
+                MelChartVector.InvalidatePlot(true);
                 MelChart2D.InvalidatePlot(true);
             }
         }
@@ -157,69 +170,81 @@
             int height = mel[0].Length;
             List<double[]> buff = new List<double[]>();
             List<double[]> res = new List<double[]>();
-           
-            double trash = 2.5;
-            Coord lastCoord = new Coord();
+
+
+
+            #region Distance
+           // Coord lastCoord = new Coord();
+            //for (int i = 0; i < mel.Count(); i++)
+            //{
+            //    Coord nowCoord = new Coord();
+
+            //    double power = 0;
+            //    for (int y = 0; y < mel[i].Length; y++)
+            //    {
+            //        power += mel[i][y];
+
+            //        if (y == 1) { nowCoord.X += mel[i][0]; continue; }
+            //        if (y == 2) { nowCoord.Y += mel[i][1]; continue; }
+
+            //        if (y < mel[i].Length / 2)
+            //            nowCoord.X += mel[i][y];
+            //        else
+            //            nowCoord.Y += mel[i][y];
+            //    }
+
+            //    if (getDist(nowCoord, lastCoord) < 7 && power > -40 )
+            //        res.Add(mel[i]);
+            //    else
+            //    {
+            //        double[] red = new double[mel[i].Length];
+            //            for (int a = 0; a < red.Length; a++)
+            //            {
+            //                red[a] = -50;
+            //            }
+            //            res.Add(red);
+            //    }
+
+            //    lastCoord = nowCoord;
+
+            //}
+            #endregion
+
+
+
+            #region Formant
             for (int i = 1; i < mel.Count(); i++)
             {
-                //Coord nowCoord = new Coord();
-                //double delta = 0;
-                bool err = false;
+                int err = 0;
+                double trash = 1.5;
                 double power = 0;
-                int count = 0;
-                for (int y = 0; y < height; y++)
+      
+                for (int y = 0; y < mel[i].Length; y++)
                 {
+                    power += mel[i][y];
 
-                        //if (y < (height / 2))
-                        //    nowCoord.X += mel[i][y];
-                        //else
-                        //    nowCoord.Y += mel[i][y];
-                        power += Math.Abs(mel[i][y]);
-                    if (mel[i][y] > mel[i - 1][y] + trash || mel[i][y] < mel[i - 1][y] - trash) count++;
-
-                    if (count > 3)
-                    {
-                        err = true;
-                        double[] red = new double[mel[i].Length];
-                        for (int a = 0; a < height; a++)
-                        {
-                            red[a] = -50;
-                        }
-                        res.Add(red);
-                        break;
-                    }
+                    if (mel[i][y] > mel[i - 1][y] + trash)  err++;
 
                 }
 
-                // double power = nowCoord.X + nowCoord.Y;
-                if (!err && power > 40)
+                if (power > -40 && err <3)
                     res.Add(mel[i]);
+                else
+                {
+                    double[] red = new double[mel[i].Length];
+                    for (int a = 0; a < red.Length; a++)
+                    {
+                        red[a] = -50;
+                    }
+                    res.Add(red);
+                }
 
-                //if (power > 10) 
-                //{
-
-                //        if (getDist(nowCoord, lastCoord) < 25 || !first)
-                //        {
-                //            first = true;
-                //            res.Add(mel[i]);
-                //            lastCoord = nowCoord;
-                //        }
-                //}
-                //else
-                //{
-
-                //    double[] red = new double[mel[i].Length];
-                //    for (int a = 0; a < red.Length; a++)
-                //    {
-                //        red[a] = -50;
-                //    }
-                //    res.Add(red);
-                //    lastCoord = new Coord();
-                //    first = false;
-                //}
 
 
             }
+
+
+            #endregion
             return res;
         }
         private double getDist(Coord a, Coord b) => Math.Abs(Math.Sqrt(Math.Pow(a.X - b.X,2) + Math.Pow(a.Y - b.Y,2)));
@@ -306,9 +331,9 @@
             waveIn.StartRecording();
             initChar();
             InitMelChart2D();
-           
-           // mfcc = new MFCC(1102, 100, 8000, 22050, 13, WindowFunction.Hamming, 128);
-            mfcc = new MFCC(551, 100, 11000, 22050, 22, WindowFunction.Hamming, 120);
+            initMelVectorChart();
+            // mfcc = new MFCC(1102, 100, 8000, 22050, 13, WindowFunction.Hamming, 128);
+            mfcc = new MFCC(551, 100, 11000, 22050, 22, WindowFunction.Hamming, 128);
             #region Gsc
             gsc1.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Black, 0));
             gsc1.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.DarkCyan, 0.2));
@@ -321,6 +346,44 @@
             InitializeComponent();
             this.DataContext = this;
 
+        }
+
+        private void initMelVectorChart()
+        {
+            MelChartVector = new PlotModel();
+            MelChartVector.Background = OxyColor.FromRgb(0, 0, 50);
+            MelChartVector.TextColor = OxyColors.White;
+
+            LineVector.Color = OxyColor.FromRgb(0, 255, 0);
+
+            MelChartVector.Series.Add(LineVector);
+
+            LinearAxis xAxis = new LinearAxis()
+            {
+                Position = AxisPosition.Bottom,
+                MajorGridlineStyle = LineStyle.Solid,
+                MajorStep = 5000,
+                IsPanEnabled = false,
+                IsZoomEnabled = true,
+                //AbsoluteMaximum = 1000000,
+                //AbsoluteMinimum = 0
+
+            };
+            MelChartVector.Axes.Add(xAxis);
+
+            LinearAxis YAxis = new LinearAxis()
+            {
+                IsAxisVisible = true,
+                Position = AxisPosition.Left,
+                IsPanEnabled = false,
+                MaximumPadding = 1,
+                Minimum = -20,
+                Maximum = 20,
+                MajorStep = 5000,
+                MajorGridlineStyle = LineStyle.Solid,
+            };
+            MelChartVector.Axes.Add(YAxis);
+            MelChartVector.InvalidatePlot(true);
         }
 
         private void InitMelChart2D()
@@ -362,8 +425,8 @@
 
 
 
-        private void initChar() { 
-             Model = new PlotModel();
+        private void initChar() {
+            Model = new PlotModel();
             Model.Background = OxyColor.FromRgb(0, 0, 50);
             Model.TextColor = OxyColors.White;
 
@@ -375,14 +438,14 @@
             {
                 Position = AxisPosition.Bottom,
                 MajorGridlineStyle = LineStyle.Solid,
-                MajorStep = 5000,
-                IsPanEnabled = false,
-                IsZoomEnabled = false,
+                //MajorStep = 5000,
+                //IsPanEnabled = false,
+                //IsZoomEnabled = true,
                 //AbsoluteMaximum = 1000000,
                 //AbsoluteMinimum = 0
 
             };
-        Model.Axes.Add(xAxis);
+            Model.Axes.Add(xAxis);
 
             LinearAxis YAxis = new LinearAxis()
             {
