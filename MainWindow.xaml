@@ -51,11 +51,19 @@
                 Maximum="{Binding SliderMax}"
                 Value="{Binding SliderValue, Mode=TwoWay}"
                 />
+            
+            <TextBlock 
+                Foreground="Black"
+                Text="{Binding coord_x, StringFormat={}x: {0}}"/>
+            <TextBlock 
+                 Foreground="Black"
+                Text="{Binding coord_y, StringFormat={}y: {0}}"/>
+
             <oxy:PlotView 
             Margin="10"
             Grid.Row="0"
             Grid.Column="0"
-            Height="200"
+            Height="400"
             Model="{Binding MelChart2D}"/>
 
 

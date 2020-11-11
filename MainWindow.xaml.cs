@@ -51,6 +51,7 @@
         public PlotModel Model { get; set; }
         public PlotModel MelChart2D { get; set; }
         private LineSeries Line = new LineSeries();
+        public RectangleBarSeries Bar { get; set; } = new RectangleBarSeries();
         private System.Windows.Media.GradientStopCollection gsc1 = new System.Windows.Media.GradientStopCollection(3);
 
 
@@ -63,7 +64,8 @@
         public BitmapImage WordBitmap { get; set; }
         
         private int sliderValue = 0;
-
+        public double coord_x { get; set; }
+        public double coord_y { get; set; }
         public int SliderMax { get;set; } = 0;
         public int SliderValue
         {
@@ -76,7 +78,35 @@
             {
                 this.sliderValue = value;
                 MfccBitmap = GetImage(mel);
+                 coord_x = 0;
+                 coord_y = 0;
 
+                coord_x += mel[value][0];
+
+                coord_y += mel[value][1];
+
+                for (int i = 2; i < mel[value].Length; i++)
+                {
+                    if (i < mel[value].Length / 2)
+                        coord_x += mel[value][i];
+                    else
+                        coord_y += mel[value][i];
+
+                }
+                //for (int i = 0; i < mel[value].Length; i+=2)
+                //{
+                //    coord_x += mel[value][i];
+
+                //    coord_y += mel[value][i + 1];
+
+                //}
+
+                Bar.Items.Clear();
+                int size = 2;
+                RectangleBarItem RectangleMel = new RectangleBarItem(coord_x - size, coord_y - size, coord_x + size, coord_y + size);
+                RectangleMel.Color = OxyColor.FromArgb(255, 0, 0, 255);
+                Bar.Items.Add(RectangleMel);
+                MelChart2D.InvalidatePlot(true);
             }
         }
 
@@ -94,8 +124,8 @@
                     mel.Clear();
                     Model.InvalidatePlot(true);
 
-                    Model.InvalidatePlot(true);
-                   // waveIn.StartRecording();
+                    // Model.InvalidatePlot(true);
+                    // waveIn.StartRecording();
                 });
             }
         }
@@ -114,9 +144,9 @@
                     }
                     SliderMax = mel.Count();
                     MfccBitmap = GetImage(mel);
-                  //  WordBitmap = GetImage(SplitWord(mel));
+                    WordBitmap = GetImage(SplitWord(mel));
                     // makeImage(mel);
-
+                    Model.InvalidatePlot(true);
                 });
             }
         }
@@ -128,7 +158,7 @@
             List<double[]> buff = new List<double[]>();
             List<double[]> res = new List<double[]>();
            
-            int trash = 5;
+            double trash = 2.5;
             Coord lastCoord = new Coord();
             for (int i = 1; i < mel.Count(); i++)
             {
@@ -136,7 +166,7 @@
                 //double delta = 0;
                 bool err = false;
                 double power = 0;
-
+                int count = 0;
                 for (int y = 0; y < height; y++)
                 {
 
@@ -145,8 +175,9 @@
                         //else
                         //    nowCoord.Y += mel[i][y];
                         power += Math.Abs(mel[i][y]);
+                    if (mel[i][y] > mel[i - 1][y] + trash || mel[i][y] < mel[i - 1][y] - trash) count++;
 
-                    if (mel[i][y] > mel[i - 1][y] + trash || mel[i][y] < mel[i - 1][y] - trash)
+                    if (count > 3)
                     {
                         err = true;
                         double[] red = new double[mel[i].Length];
@@ -161,7 +192,7 @@
                 }
 
                 // double power = nowCoord.X + nowCoord.Y;
-                if (!err && power > 10)
+                if (!err && power > 40)
                     res.Add(mel[i]);
 
                 //if (power > 10) 
@@ -274,8 +305,10 @@
             waveIn.WaveFormat = new WaveFormat(22050, 1);
             waveIn.StartRecording();
             initChar();
+            InitMelChart2D();
+           
            // mfcc = new MFCC(1102, 100, 8000, 22050, 13, WindowFunction.Hamming, 128);
-            mfcc = new MFCC(551, 100, 11000, 22050, 23, WindowFunction.Hamming, 220);
+            mfcc = new MFCC(551, 100, 11000, 22050, 22, WindowFunction.Hamming, 120);
             #region Gsc
             gsc1.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Black, 0));
             gsc1.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.DarkCyan, 0.2));
@@ -292,7 +325,39 @@
 
         private void InitMelChart2D()
         {
+            double size = 160;
             MelChart2D = new PlotModel();
+            LinearAxis xAxis = new LinearAxis()
+            {
+                Position = AxisPosition.Bottom,
+                MajorGridlineStyle = LineStyle.Solid,
+                MajorStep = 5000,
+                IsPanEnabled = false,
+                IsZoomEnabled = false,
+                //AbsoluteMaximum = 1000000,
+                //AbsoluteMinimum = 0
+
+            };
+            MelChart2D.Axes.Add(xAxis);
+
+            LinearAxis YAxis = new LinearAxis()
+            {
+                IsAxisVisible = true,
+                Position = AxisPosition.Left,
+                IsPanEnabled = false,
+                MaximumPadding = 1,
+                Minimum = -1,
+                Maximum = 1,
+                MajorStep = 5000,
+                MajorGridlineStyle = LineStyle.Solid,
+            };
+            MelChart2D.Axes.Add(YAxis);
+            MelChart2D.Axes[0].Maximum = size;
+            MelChart2D.Axes[0].Minimum = -size;
+            MelChart2D.Axes[1].Maximum = size;
+            MelChart2D.Axes[1].Minimum = -size;
+            MelChart2D.Background = OxyColors.White;
+            MelChart2D.Series.Add(Bar);
         }
 
 
