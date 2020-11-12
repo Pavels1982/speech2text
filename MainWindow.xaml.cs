@@ -23,6 +23,11 @@
     using System.Drawing;
     using System.IO;
 
+
+    public class FonemMatrix
+    {
+       public string[,] Fonem = new string[400,400];
+    }
     public class Coord
     { 
         public double X { get; set; }
@@ -57,7 +62,8 @@
         private LineSeries Line = new LineSeries();
         public RectangleBarSeries Bar { get; set; } = new RectangleBarSeries();
         private System.Windows.Media.GradientStopCollection gsc1 = new System.Windows.Media.GradientStopCollection(3);
-
+        public FonemMatrix FonemMatrix;
+        public string RecognitionText { get; set; } = string.Empty;
 
         private MFCC mfcc;
 
@@ -72,6 +78,8 @@
         public double coord_y { get; set; }
         public double power { get; set; }
         public int SliderMax { get;set; } = 0;
+
+        public string FonemText { get; set; } = String.Empty;
         public int SliderValue
         {
             get
@@ -83,26 +91,37 @@
             {
                 this.sliderValue = value;
                 MfccBitmap = GetImage(mel);
-                 coord_x = 0;
-                 coord_y = 0;
+                coord_x = 0;
+                coord_y = 0;
                 power = 0;
                 LineVector.Points.Clear();
+                int err = 10;
 
                 for (int i = 0; i < mel[value].Length; i++)
                 {
                     power += mel[value][i];
                     LineVector.Points.Add(new DataPoint(i, mel[value][i]));
 
-                    if (i == 0) { coord_x += mel[value][0]; continue; }
-                    if (i == 1) { coord_y += mel[value][1]; continue; }
+                    if (i == 0) { coord_x += mel[value][0] + err; continue; }
+                    if (i == 1) { coord_y += mel[value][1] - err; continue; }
 
                     if (i < mel[value].Length / 2)
-                        coord_x += mel[value][i];
+                        coord_x += mel[value][i] + err;
                     else
-                        coord_y -= mel[value][i];
+                        coord_y -= mel[value][i] - err;
 
                    
                 }
+
+                if (IsStore)
+                {
+                    int sizeArea = 2;
+                    for (int x = (int)coord_x - (sizeArea / 2); x < (int)coord_x + (sizeArea / 2); x++)
+                        for (int y = (int)coord_y - (sizeArea / 2); y < (int)coord_y + (sizeArea / 2); y++)
+                            FonemMatrix.Fonem[x, y] = FonemText;
+                }
+
+
                 //for (int i = 0; i < mel[value].Length; i+=2)
                 //{
                 //    coord_x += mel[value][i];
@@ -124,6 +143,19 @@
         }
 
         List<double[]> mel = new List<double[]>();
+        public bool IsStore { get; set; } = false;
+
+        public ICommand Store
+        {
+            get
+            {
+                return new RelayCommand((o) => 
+                {
+                    IsStore = !IsStore ? true: false;
+                });
+            }
+        }
+
         public ICommand StartRecordCommand
         {
             get
@@ -170,11 +202,11 @@
             int height = mel[0].Length;
             List<double[]> buff = new List<double[]>();
             List<double[]> res = new List<double[]>();
-
+            RecognitionText = string.Empty;
 
 
             #region Distance
-           // Coord lastCoord = new Coord();
+            // Coord lastCoord = new Coord();
             //for (int i = 0; i < mel.Count(); i++)
             //{
             //    Coord nowCoord = new Coord();
@@ -209,6 +241,31 @@
 
             //}
             #endregion
+
+
+            
+            for (int c = 1; c < mel.Count(); c++)
+            {
+                int err = 10;
+                coord_x = 0;
+                coord_y = 0;
+                double power = 0;
+
+                for (int i = 0; i < mel[c].Length; i++)
+                {
+                    power += mel[c][i];
+                    if (i == 0) { coord_x += mel[c][0] + err; continue; }
+                    if (i == 1) { coord_y += mel[c][1] - err; continue; }
+
+                    if (i < mel[c].Length / 2)
+                        coord_x += mel[c][i] + err;
+                    else
+                        coord_y -= mel[c][i] - err;
+                }
+                if  (power > 30)
+                RecognitionText += FonemMatrix.Fonem[(int)coord_x, (int)coord_y];
+            }
+            
 
 
 
@@ -332,6 +389,7 @@
             initChar();
             InitMelChart2D();
             initMelVectorChart();
+            FonemMatrix = (FonemMatrix)JsonHelper.LoadObject<FonemMatrix>();
             // mfcc = new MFCC(1102, 100, 8000, 22050, 13, WindowFunction.Hamming, 128);
             mfcc = new MFCC(551, 100, 11000, 22050, 22, WindowFunction.Hamming, 128);
             #region Gsc
@@ -388,7 +446,7 @@
 
         private void InitMelChart2D()
         {
-            double size = 160;
+            double size = 460;
             MelChart2D = new PlotModel();
             LinearAxis xAxis = new LinearAxis()
             {
@@ -416,9 +474,9 @@
             };
             MelChart2D.Axes.Add(YAxis);
             MelChart2D.Axes[0].Maximum = size;
-            MelChart2D.Axes[0].Minimum = -size;
+            MelChart2D.Axes[0].Minimum = 0;
             MelChart2D.Axes[1].Maximum = size;
-            MelChart2D.Axes[1].Minimum = -size;
+            MelChart2D.Axes[1].Minimum = 0;
             MelChart2D.Background = OxyColors.White;
             MelChart2D.Series.Add(Bar);
         }
@@ -533,5 +591,9 @@
             return color;
         }
 
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            JsonHelper.SaveObject(FonemMatrix);
+        }
     }
 }

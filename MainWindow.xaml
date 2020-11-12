@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:VoiceRecorder"
         xmlns:oxy="http://oxyplot.org/wpf"
         mc:Ignorable="d"
+        Closed="Window_Closed"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Grid.ColumnDefinitions>
@@ -51,7 +52,12 @@
                 Maximum="{Binding SliderMax}"
                 Value="{Binding SliderValue, Mode=TwoWay}"
                 />
-            
+
+            <CheckBox Content="IsStore" IsChecked="{Binding IsStore}"/>
+            <TextBox Text="{Binding FonemText,Mode=TwoWay}" Width="100"/>
+            <TextBlock 
+                Foreground="Black"
+                Text="{Binding RecognitionText, StringFormat={}распознано: {0}}"/>
             <TextBlock 
                 Foreground="Black"
                 Text="{Binding coord_x, StringFormat={}x: {0}}"/>

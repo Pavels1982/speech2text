@@ -23,3 +23,5 @@ C:\Users\Pavel\source\repos\VoiceRecorder\bin\Debug\PropertyChanged.dll
 C:\Users\Pavel\source\repos\VoiceRecorder\bin\Debug\System.Runtime.InteropServices.RuntimeInformation.dll
 C:\Users\Pavel\source\repos\VoiceRecorder\bin\Debug\PropertyChanged.xml
 C:\Users\Pavel\source\repos\VoiceRecorder\bin\Debug\MFCC.dll
+C:\Users\Pavel\source\repos\VoiceRecorder\bin\Debug\Newtonsoft.Json.dll
+C:\Users\Pavel\source\repos\VoiceRecorder\bin\Debug\Newtonsoft.Json.xml
