@@ -24,9 +24,10 @@
     using System.IO;
 
 
+
     public class FonemMatrix
     {
-       public string[,] Fonem = new string[400,400];
+       public char[,] Fonem = new char[25,999];
     }
     public class Coord
     { 
@@ -69,6 +70,8 @@
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        public int[] Chars = new int[127];
+
         public bool IsRecord { get; set; }
         public BitmapImage MfccBitmap { get; set; }
         public BitmapImage WordBitmap { get; set; }
@@ -95,40 +98,32 @@
                 coord_y = 0;
                 power = 0;
                 LineVector.Points.Clear();
-                int err = 10;
+                // power += mel[value][i];
+
+                power = Math.Log(power);
+
 
                 for (int i = 0; i < mel[value].Length; i++)
                 {
-                    power += mel[value][i];
-                    LineVector.Points.Add(new DataPoint(i, mel[value][i]));
-
-                    if (i == 0) { coord_x += mel[value][0] + err; continue; }
-                    if (i == 1) { coord_y += mel[value][1] - err; continue; }
-
-                    if (i < mel[value].Length / 2)
-                        coord_x += mel[value][i] + err;
-                    else
-                        coord_y -= mel[value][i] - err;
-
-                   
+                    LineVector.Points.Add(new DataPoint(i, Math.Round(mel[value][i])));
                 }
 
                 if (IsStore)
                 {
-                    int sizeArea = 2;
-                    for (int x = (int)coord_x - (sizeArea / 2); x < (int)coord_x + (sizeArea / 2); x++)
-                        for (int y = (int)coord_y - (sizeArea / 2); y < (int)coord_y + (sizeArea / 2); y++)
-                            FonemMatrix.Fonem[x, y] = FonemText;
+                    for (int i = 1, offset = 0; i < mel[value].Length; i += 3, offset += 6)
+                    {
+                        int coeff = (int)Math.Round(mel[value][i] < 0 ? 1 : mel[value][i]) * 100;
+                        coeff += (int)Math.Round(mel[value][i+1] < 0 ? 1 : mel[value][i+1]) * 10;
+                        coeff += (int)Math.Round(mel[value][i+2] < 0 ? 1 : mel[value][i+2]);
+
+                        string[] log = Math.Round(Math.Log(coeff), 3).ToString().Split(',');
+
+                        FonemMatrix.Fonem[Int32.Parse(log[0]) + offset, Int32.Parse(log[1])] = FonemText[0];
+
+                    }
+
                 }
 
-
-                //for (int i = 0; i < mel[value].Length; i+=2)
-                //{
-                //    coord_x += mel[value][i];
-
-                //    coord_y += mel[value][i + 1];
-
-                //}
 
                 Bar.Items.Clear();
                 int size = 2;
@@ -242,32 +237,58 @@
             //}
             #endregion
 
-
-            
+           
+            //int[] q = new int[6];
             for (int c = 1; c < mel.Count(); c++)
             {
-                int err = 10;
-                coord_x = 0;
-                coord_y = 0;
                 double power = 0;
+            //    Chars = new int[127];
 
                 for (int i = 0; i < mel[c].Length; i++)
                 {
                     power += mel[c][i];
-                    if (i == 0) { coord_x += mel[c][0] + err; continue; }
-                    if (i == 1) { coord_y += mel[c][1] - err; continue; }
-
-                    if (i < mel[c].Length / 2)
-                        coord_x += mel[c][i] + err;
-                    else
-                        coord_y -= mel[c][i] - err;
                 }
-                if  (power > 30)
-                RecognitionText += FonemMatrix.Fonem[(int)coord_x, (int)coord_y];
+
+                if (power > -40)
+                {
+
+                for (int i = 1, offset = 0; i < mel[c].Length; i += 3, offset += 6)
+                {
+                    int coeff = (int)Math.Round(mel[c][i] < 0 ? 1 : mel[c][i]) * 100;
+                    coeff += (int)Math.Round(mel[c][i + 1] < 0 ? 1 : mel[c][i + 1]) * 10;
+                    coeff += (int)Math.Round(mel[c][i + 2] < 0 ? 1 : mel[c][i + 2]);
+
+                    string[] log = Math.Round(Math.Log(coeff), 3).ToString().Split(',');
+                      
+                        if (log.Length > 1)
+                        {
+                            char word = FonemMatrix.Fonem[Int32.Parse(log[0]) + offset, Int32.Parse(log[1])];
+                            RecognitionText += word.ToString();
+                        }
+                }
+
+
+                    //        for (int i = 0; i < mel[c].Length; i++)
+                    //        {
+                    //            int val = (int)Math.Abs(mel[c][i] * 100);
+                    //            Chars[(int)FonemMatrix.Fonem[i, val]]+=1;
+                    //           // char word = FonemMatrix.Fonem[i, val];
+
+                    //        }
+
+                    //        int max = 0;
+                    //        int index = 0;
+                    //        for (int i = 0; i < Chars.Length; i++)
+                    //        {
+                    //            if (Chars[i] > max) { max = Chars[i]; index = i; };
+                    //        }
+                    //        RecognitionText +=  ((char)index).ToString();
+
+
+                }
+
+
             }
-            
-
-
 
             #region Formant
             for (int i = 1; i < mel.Count(); i++)
@@ -285,15 +306,35 @@
                 }
 
                 if (power > -40 && err <3)
-                    res.Add(mel[i]);
+                    buff.Add(mel[i]);
                 else
                 {
-                    double[] red = new double[mel[i].Length];
-                    for (int a = 0; a < red.Length; a++)
-                    {
-                        red[a] = -50;
+                    
+                     if (buff.Count > 0)
+                     {
+                        double[] temp = new double[buff[0].Length];
+
+                        for (int y = 0; y < buff[0].Length; y++)
+                        {
+                            for (int x = 0; x < buff.Count(); x++)
+                            {
+                                temp[y] += buff[x][y];
+                            }
+                            temp[y] = temp[y] / buff[0].Length;
+                        }
+                        res.Add(temp);
+                        buff.Clear();
                     }
-                    res.Add(red);
+                    else 
+                    {
+                        //Красный вектор
+                        double[] red = new double[mel[i].Length];
+                        for (int a = 0; a < red.Length; a++)
+                        {
+                            red[a] = -50;
+                        }
+                        res.Add(red);
+                    }
                 }
 
 
@@ -391,7 +432,7 @@
             initMelVectorChart();
             FonemMatrix = (FonemMatrix)JsonHelper.LoadObject<FonemMatrix>();
             // mfcc = new MFCC(1102, 100, 8000, 22050, 13, WindowFunction.Hamming, 128);
-            mfcc = new MFCC(551, 100, 11000, 22050, 22, WindowFunction.Hamming, 128);
+            mfcc = new MFCC(551, 100, 11000, 22050, 13, WindowFunction.Hamming, 128);
             #region Gsc
             gsc1.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.Black, 0));
             gsc1.Add(new System.Windows.Media.GradientStop(System.Windows.Media.Colors.DarkCyan, 0.2));
